@@ -1,12 +1,15 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import App from './App';
+import Tictactoe from './games/Tictactoe';
+import Nav from './components/Nav';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import * as serviceWorker from './serviceWorker';
 
 ReactDOM.render(
   <React.StrictMode>
-    <App />
+    <Nav />
+    <Tictactoe />
   </React.StrictMode>,
   document.getElementById('root')
 );
