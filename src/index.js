@@ -1,8 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import Tictactoe from './games/Tictactoe';
-import Nav from './components/Nav';
+import Tictactoe from './games/Tictactoe.jsx';
+import Nav from './components/Nav.jsx';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import * as serviceWorker from './serviceWorker';
 

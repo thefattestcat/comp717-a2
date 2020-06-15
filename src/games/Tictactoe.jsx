@@ -2,8 +2,15 @@ import React, { Component } from 'react';
 
 class Tictactoe extends Component {
 
-  state = { test: 'deez'}
-  
+  constructor(props) {
+    super(props)
+    this.stage = React.createRef();
+    this.state = {
+      
+    }
+}
+   
+
   render() {
     
     return (
