@@ -8,10 +8,9 @@ class Nav extends Component {
   render() {
     
     return (
-      <Navbar variant='dark' fixed='top' bg='dark'>
-        <a class="navbar-brand">COMP717 Assignment 2</a>
-        <Button>asdasd</Button>
-        <Button>asdasd</Button>
+      <Navbar variant='dark' sticky='top' bg='dark'>
+        <a className="navbar-brand">COMP717 Assignment 2</a>
+        <Button>asd</Button>
       </Navbar>
     );
   }
