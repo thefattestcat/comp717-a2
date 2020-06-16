@@ -8,26 +8,43 @@ class gridSquare extends Component {
       this.state = {
         id: this.props.id,
         color: this.props.color,
-        player: '', //What player owns this square.
+        player: '', //Why am I tracking this here?
       }
-              
     }
 
-    changeColour = () => {
-        this.setState({color: 'red'})
-        console.log('clicked')
+    componentWillReceiveProps (props) {
+      this.changeCol(props)
     }
 
-    insertIcon = () => {
-        this.setState({
-            
+    handleClick = () => {
+      console.log('clicked ', this.state.id)
+      this.props.parentCB(this.state)
+        .then( (s) => {
+          this.changeCol(s)
         })
+        .catch( (err) => {
+          console.log(err)
+        })
+    }
+
+    changeCol = (s) => {
+      console.log(s)
+      let c;
+      if(s == 0) c = 'white';
+      if(s == 1) c = 'red';
+      console.log('c is ', c)
+      this.setState({
+        color: c
+      })
     }
   
     render() {
       return (
         <>
-          <div className="grid-square" onClick={this.props.parentCB(this.state)} style={{backgroundColor: this.state.color}}></div>
+          <div className="grid-square" 
+            onClick={this.handleClick} 
+            style={{backgroundColor: this.state.color}}>
+          </div>
         </>
       );
     }
