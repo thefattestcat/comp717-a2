@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
-import ReactDOM from 'react-dom';
+import { unmountComponentAtNode, findDOMNode } from 'react-dom';
+
 import ReactTestUtils from 'react';
 import {Container, Row, Col, Button} from 'react-bootstrap';
 import GridSquare from './gridSquare'
@@ -37,16 +38,17 @@ class Tictactoe extends Component {
       positionState: p,
       winner: '',
     }, () => {
+      console.log('new game: ', this.state)
+      let ng = this.createGrid();
       this.setState({
-        grid: this.createGrid(),
+        grid: ng,
       }, () => {
         console.log('Grid mounted')
         console.log(this.state.grid)
         
         console.log('Game Started!')
         if(this.state.startingPlayer == 'AI') {
-          let d = Math.floor(Math.random() * 10)
-          this.gs[d].current.handleAI();
+          this.aiEval();
         }
       })
     })
@@ -59,19 +61,31 @@ class Tictactoe extends Component {
   checkWin = () => {
     //Get positionState and do calculations for winner
     let p = this.state.positionState;
-    let w;
-    //make this func
-    if(
-      (p[0] == 1 && p[1] == 1 && p[2] == 1) ||
-      (p[0] == 1 && p[4] == 1 && p[8] == 1) ||
-      (p[0] == 1 && p[3] == 1 && p[6] == 1) ||
-      (p[0] == 1 && p[1] == 1 && p[2] == 1) 
-      ){ w = 'Player wins';}
-    else w = 'Noone';
+    let w = 0; let winner;
+    
+    //Horizontal
+    if(p[0] == p[1] && p[1] == p[2]) w = p[0];
+    if(p[3] == p[4] && p[4] == p[5]) w = p[3];
+    if(p[6] == p[7] && p[7] == p[8]) w = p[6];
+    
+    //Vertical
+    if(p[0] == p[3] && p[3] == p[6]) w = p[0];
+    if(p[1] == p[4] && p[4] == p[7]) w = p[1];
+    if(p[2] == p[5] && p[5] == p[8]) w = p[2];
+
+    //Diag
+    if(p[0] == p[4] && p[4] == p[8]) w = p[0];
+    if(p[2] == p[4] && p[4] == p[6]) w = p[2];
+
+    if(w == 1) winner = 'Player';
+    if(w == 2) winner = 'AI';
+    if(w == 0) winner = 'Noone';
+
     this.setState({
-      winner: w,
+      winner: winner,
     })
-    return w;
+
+    return winner;
   }
 
   setSquareState = (squareId, playerId) => {
@@ -84,12 +98,11 @@ class Tictactoe extends Component {
           moveArray: j,
           positionState: k
         }, () => {
-          console.log(this.state.moveArray);
-          console.log(this.state.positionState);
+          //console.log(this.state.moveArray);
+          //console.log(this.state.positionState);
           if(this.state.moveArray.length >= 5) {
             this.checkWin()
           }
-          this.incrementTurn();
           resolve(this.state.positionState[squareId])
         }) 
       } else {
@@ -103,6 +116,31 @@ class Tictactoe extends Component {
     return this.setSquareState(state.id, 1); //(positionId, playerId= 1, for player)
   }
 
+  aiEval = () => {
+    //Do evaluation function here;
+    /**
+     * 1) Get positionState array and list all available options in availPos
+     * 2) Put each position through evaluation func
+     */
+    let availPos = [];
+    console.log(this.state.positionState)
+    
+    for(let i = 0; i< this.state.positionState.length; i++) {
+      if(this.state.positionState[i] === 0) {
+        availPos.push(i)
+      }
+    }
+
+    console.log('availPos', availPos)
+    if(availPos.length > 0){
+      let d = availPos[Math.floor(Math.random() * availPos.length)]
+      console.log('Moving to ', d)
+      this.gs[d].current.handleAI();
+    } else {
+      console.log('no more moves')
+    }
+  }
+
   aiMove = (id) => {
     return this.setSquareState(id, 2);
   }
@@ -111,7 +149,9 @@ class Tictactoe extends Component {
     let t = this.state.turnCount;
     if(t < 9) {
       t++;
-      this.setState({turnCount: t})
+      this.setState({ turnCount: t }, () => {
+        this.aiEval();
+      })
     }
   }
 
@@ -127,6 +167,8 @@ class Tictactoe extends Component {
   //**Div stuff */
   createGrid = () => {
     let sqs = [];
+    this.gs = [];
+    console.log('Grid: ', this.state)
     for(var i = 0; i < 9; i++) {
       this.gs[i] = React.createRef();
       sqs.push(
@@ -135,6 +177,7 @@ class Tictactoe extends Component {
           aiCB={this.aiMove} 
           id={i} 
           state={this.state.positionState[i]} 
+          colour={'white'}
           player={0}
           ref={this.gs[i]}
         />
@@ -165,7 +208,7 @@ class Tictactoe extends Component {
           </Col>
           <Col md="8" xs="12">
             <div className="align-content-center">
-              <div className="grid">
+              <div className="grid" onClick={this.incrementTurn}>
                 {this.state.grid}
               </div>
             </div>

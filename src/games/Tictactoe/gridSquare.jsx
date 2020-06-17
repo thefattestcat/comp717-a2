@@ -8,34 +8,43 @@ class gridSquare extends Component {
     super(props)
     this.state = {
       id: this.props.id,
-      player: 0, //Why am I tracking this here?
+      player: this.props.player, 
+      colour: this.props.colour,
     }
     this.handleClick = this.handleClick.bind(this);
     this.handleAI = this.handleAI.bind(this);
-
+    console.log(`constructor`, this.state)
   }
 
-  static getDerivedStateFromProps(props, state) {
-    console.log(props, state)
+  //Refactor this
+  UNSAFE_componentWillReceiveProps(newProps) {
+    console.log('newProps:', newProps)
+    if(newProps.player == 0){
+      this.setState({
+        colour: newProps.colour,
+        player: newProps.player
+      })
+    }
   }
 
   componentDidMount() {
-    document.addEventListener('doAI', this.handleAI);
+    console.log('DidMount')
+    this.setState({
+      colour: this.props.colour
+    })
   }
 
   componentWillUnmount() {
-    document.removeEventListener('doAI', this.handleAI);
   }
 
   componentDidUpdate() {
-    console.log('DidUpdate: ',this.state)
+    //console.log('DidUpdate: ',this.state)
   }
 
   handleClick() {
     console.log('clicked ', this.state.id)
     this.props.parentCB(this.state)
       .then( (s) => {
-        console.log(s)
         this.setState({
           player: s
         }, () => {
@@ -48,7 +57,6 @@ class gridSquare extends Component {
   }
 
   handleAI() {
-    console.log('HandleAI')
     this.props.aiCB(this.state.id) 
       .then( (s) => {
         this.setState({
@@ -64,12 +72,11 @@ class gridSquare extends Component {
 
   changeCol = () => {
     let s = this.state.player
-    console.log(s)
     let c;
     if(s == 0) c = 'white';
     if(s == 1) c = 'red';
     if(s == 2) c = 'blue';
-    console.log('c is ', c)
+    //console.log('c is ', c)
     this.setState({
       colour: c,
     })
