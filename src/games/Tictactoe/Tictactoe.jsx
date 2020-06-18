@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import {Container, Row, Col, Button} from 'react-bootstrap';
+import {Container, Row, Col, Button, InputGroup} from 'react-bootstrap';
 import GridSquare from './gridSquare'
 import './Tictactoe.css'
 
@@ -14,7 +14,8 @@ class Tictactoe extends Component {
       moveArray: [],  //Array of Moves
       positionState: [], //Who owns each square (0-8), 0 = empty, 1 = player, 2 = AI
       mode: '', //Not implemented (AI or 2-PLayer)
-      startingPlayer: 'Player'
+      startingPlayer: 'Player',
+      depth: 2,
     };
 
   }
@@ -71,31 +72,6 @@ class Tictactoe extends Component {
     this.setState({
       startingPlayer: p
     })
-  }
-
-  checkPosition = (id) => {
-    return this.state.moveArray.indexOf(id) === -1;
-  }
-  
-  checkWin = (boardState) => {
-    const winIndexes = [
-      [0, 1, 2],
-      [0, 3, 6],
-      [0, 4, 8],
-      [1, 4, 7],
-      [2, 5, 8],
-      [2, 4, 6],
-      [3, 4, 5],
-      [6, 7, 8],
-    ];
-
-    for (let i = 0; i < winIndexes.length; i++) {
-      const [a, b, c] = winIndexes[i];
-      if (boardState[a] !== 0 && boardState[a] === boardState[b] && boardState[a] === boardState[c]) {
-        return a; //Return playerId of square
-      } 
-    }
-    return -1; //No winner
   }
 
   setSquareState = (squareId, playerId) => {
@@ -181,10 +157,45 @@ class Tictactoe extends Component {
     //console.log('checkEmpty:', boardState, emptyPositions)
     return emptyPositions;
   }
+
+  /**
+   * 
+   * @param {Number} id - index of square in grid 
+   * @returns true if id has been used
+   */
+  checkPosition = (id) => {
+    return this.state.moveArray.indexOf(id) === -1;
+  }
+  
+  /**
+   * 
+   * @param {positionStateArray} boardState - board state
+   * @returns playerId (1 or 2) for win, -1 for draw 
+   */
+  checkWin = (boardState) => {
+    const winIndexes = [
+      [0, 1, 2],
+      [0, 3, 6],
+      [0, 4, 8],
+      [1, 4, 7],
+      [2, 5, 8],
+      [2, 4, 6],
+      [3, 4, 5],
+      [6, 7, 8],
+    ];
+
+    for (let i = 0; i < winIndexes.length; i++) {
+      const [a, b, c] = winIndexes[i];
+      if (boardState[a] !== 0 && boardState[a] === boardState[b] && boardState[a] === boardState[c]) {
+        return a; //Return playerId of square
+      } 
+    }
+    return -1; //No winner
+  }
   
   checkTerminal = (boardState) => {
-    if(this.checkWin(boardState) !== -1) return false;
     if(this.checkEmptyPositions(boardState).length === 0) return true;
+    if(this.checkWin(boardState) !== -1) return true;
     return false;
   }
 
@@ -196,20 +207,20 @@ class Tictactoe extends Component {
    * @description recursively iterates mves from boardState until terminal state is reached.
    * @returns
    */
-  makeMove = (boardState, p1, p2) => {
+  makeMove = (boardState, p1, p2, depth) => {
     let x = this.state.minmaxLevel;
     x++;
     const c = [...boardState];
     this.setState({minmaxLevel: x}, () => {
       console.log(`minmax: ${this.state.minmaxLevel}  Current Player: ${p1}`)
-      if(!this.checkTerminal(boardState) && this.state.minmaxLevel <= 3) {
+      
+      if(!this.checkTerminal(boardState) && this.state.minmaxLevel < depth) {
         let empty = this.checkEmptyPositions(boardState);
         if(empty.length > 0) {
           let k;
           for(let i = 0; i < empty.length; i++) {
             k = [...c];
-            console.log('Loop:', k, c)
-            k[empty[i]] = p1; //Iterate this
+            k[empty[i]] = p1;
             if(this.checkTerminal(k)) {
               const w = this.checkWin(k)
               if(w === -1) console.log('Draw')
@@ -217,8 +228,8 @@ class Tictactoe extends Component {
               console.log(k)
               return k;
             } 
-            console.log('makeMove: ', empty, k)
-            this.makeMove(k, p2, p1);
+            //console.log('makeMove: ', empty, k)
+            this.makeMove(k, p2, p1, this.state.depth);
           } 
         } 
         else {
@@ -290,6 +301,9 @@ class Tictactoe extends Component {
               <br></br>
               <b>Mode: {this.state.mode}</b>
             </p>
+            <div>
+              <p>Search Depth:</p>
+            </div>
             <Button onClick={this.whoStart}>Start: {this.state.startingPlayer}</Button>
             <Button onClick={this.newGame}>New Game</Button>
           </Col>
