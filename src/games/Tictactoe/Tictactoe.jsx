@@ -45,47 +45,57 @@ class Tictactoe extends Component {
       }, () => {
         console.log('Grid mounted')
         console.log(this.state.grid)
-        
+          
         console.log('Game Started!')
         if(this.state.startingPlayer == 'AI') {
-          this.aiEval();
+          this.aiMove();
         }
       })
     })
   }
   
+  incrementTurn = () => {
+    let t = this.state.turnCount;
+    if(t < 9) {
+      t++;
+      this.setState({ turnCount: t }, () => {
+        this.aiMove();
+      })
+    }
+  }
+
+  whoStart = () => {
+    let p = this.state.startingPlayer;
+    if(p == 'Player') p = 'AI'
+    else p = 'Player';
+    this.setState({
+      startingPlayer: p
+    })
+  }
+
   checkPosition = (id) => {
     return this.state.moveArray.indexOf(id) == -1;
   }
   
-  checkWin = () => {
-    //Get positionState and do calculations for winner
-    let p = this.state.positionState;
-    let w = 0; let winner;
-    
-    //Horizontal
-    if(p[0] == p[1] && p[1] == p[2]) w = p[0];
-    if(p[3] == p[4] && p[4] == p[5]) w = p[3];
-    if(p[6] == p[7] && p[7] == p[8]) w = p[6];
-    
-    //Vertical
-    if(p[0] == p[3] && p[3] == p[6]) w = p[0];
-    if(p[1] == p[4] && p[4] == p[7]) w = p[1];
-    if(p[2] == p[5] && p[5] == p[8]) w = p[2];
+  checkWin = (boardState) => {
+    const winIndexes = [
+      [0, 1, 2],
+      [0, 3, 6],
+      [0, 4, 8],
+      [1, 4, 7],
+      [2, 5, 8],
+      [2, 4, 6],
+      [3, 4, 5],
+      [6, 7, 8],
+    ];
 
-    //Diag
-    if(p[0] == p[4] && p[4] == p[8]) w = p[0];
-    if(p[2] == p[4] && p[4] == p[6]) w = p[2];
-
-    if(w == 1) winner = 'Player';
-    if(w == 2) winner = 'AI';
-    if(w == 0) winner = 'Noone';
-
-    this.setState({
-      winner: winner,
-    })
-
-    return winner;
+    for (let i = 0; i < winIndexes.length; i++) {
+      const [a, b, c] = winIndexes[i];
+      if (boardState[a] !== 0 && boardState[a] === boardState[b] && boardState[a] === boardState[c]) {
+        return a; //Return playerId of square
+      } 
+    }
+    return -1; //No winner
   }
 
   setSquareState = (squareId, playerId) => {
@@ -101,6 +111,8 @@ class Tictactoe extends Component {
           //console.log(this.state.moveArray);
           //console.log(this.state.positionState);
           if(this.state.moveArray.length >= 5) {
+            this.minmax();
+            if(this.checkTerminal())
             this.checkWin()
           }
           resolve(this.state.positionState[squareId])
@@ -112,16 +124,24 @@ class Tictactoe extends Component {
     })
   }
 
+  /** Component Callbacks */
   squaresCB = (state) => {
     return this.setSquareState(state.id, 1); //(positionId, playerId= 1, for player)
   }
+  aiCB = (id) => {
+    return this.setSquareState(id, 2);
+  }
 
-  aiEval = () => {
-    //Do evaluation function here;
+  /** AI */
+  aiMove = () => {
     /**
-     * 1) Get positionState array and list all available options in availPos
-     * 2) Put each position through evaluation func
-     */
+    * 1) Get positionState array and list all available options in availPos
+    * 2) Put each position through evaluation func
+    * 3) choose position with highest eval value;
+    */
+    //s = current board state,
+    //Eval(s) = 3X2(s) + X1(s) − (3O2(s) + O1(s))
+    
     let availPos = [];
     console.log(this.state.positionState)
     
@@ -130,38 +150,93 @@ class Tictactoe extends Component {
         availPos.push(i)
       }
     }
-
+    
     console.log('availPos', availPos)
     if(availPos.length > 0){
       let d = availPos[Math.floor(Math.random() * availPos.length)]
       console.log('Moving to ', d)
       this.gs[d].current.handleAI();
+      this.makeMove(this.state.positionState,1,2)
     } else {
       console.log('no more moves')
     }
   }
 
-  aiMove = (id) => {
-    return this.setSquareState(id, 2);
-  }
 
-  incrementTurn = () => {
-    let t = this.state.turnCount;
-    if(t < 9) {
-      t++;
-      this.setState({ turnCount: t }, () => {
-        this.aiEval();
-      })
+  
+  /** Minmax */
+  
+  /**
+   * 
+   * @param {positionStateArray} boardState
+   * @returns {Array} Array of indexes of empty positions left. 
+   */
+  checkEmptyPositions = (boardState) => {
+    let emptyPositions = []; //Stores indexes of empty board positions.
+    
+    for(let i = 0; i < boardState.length; i++) {
+      if(boardState[i] === 0) emptyPositions.push(i);
     }
+    //console.log('checkEmpty:', boardState, emptyPositions)
+    return emptyPositions;
+  }
+  
+  checkTerminal = (boardState) => {
+    if(this.checkWin(boardState) !== -1) return false;
+    if(this.checkEmptyPositions(boardState).length === 0) return true;
+    return false;
   }
 
-  whoStart = () => {
-    let p = this.state.startingPlayer;
-    if(p == 'Player') p = 'AI'
-    else p = 'Player';
-    this.setState({
-      startingPlayer: p
-    })
+  /**
+   * 
+   * @param {positionArrayState} boardState 
+   * @param {Number} p1 - playerId of turn i
+   * @param {Number} p2 - playerId of turn i+1
+   * @description recursively iterates mves from boardState until terminal state is reached.
+   * @returns
+   */
+  makeMove = (boardState, p1, p2) => {
+    console.log("makeMove turn: ", p1)
+    if(!this.checkTerminal(boardState)) {
+      let empty = this.checkEmptyPositions(boardState);
+      let c = boardState;
+      if(empty.length > 0) {
+        c[empty[0]] = p1;
+        console.log('BugCheck: ', empty, c)
+        if(this.checkTerminal(c)) {
+          const w = this.checkWin(c);
+          if(w === -1) console.log('Draw')
+          if(w === 1) console.log('Game finished, winner = ', w)
+          console.log(c)
+          return boardState
+        } 
+        console.log('makeMove: ', c)
+        this.makeMove(c, p2, p1);
+      } else {
+        console.log('Game over, Winner = ', this.checkWin(c),c)
+      }
+    } else {
+      console.log("Finished makeMove", boardState);
+      return boardState;
+    }
+  } 
+
+  minmax = () => {
+    /**
+     * 1. Store current boardState and current players turn (1 or 2).
+     */
+    let b = this.state.positionState;
+
+    if (this.checkTerminal(b) === true) {
+      if (this.checkWin(b) === 1) {
+        return  10; 
+      } else if (this.checkWin(b) === 2) {  
+        return -10;
+      } else {
+        return 0;
+      }
+    }
+     
   }
 
   //**Div stuff */
@@ -174,7 +249,7 @@ class Tictactoe extends Component {
       sqs.push(
         <GridSquare 
           parentCB={this.squaresCB}
-          aiCB={this.aiMove} 
+          aiCB={this.aiCB} 
           id={i} 
           state={this.state.positionState[i]} 
           colour={'white'}
@@ -219,7 +294,6 @@ class Tictactoe extends Component {
             
           </Col>
         </Row>
-        
       </Container>
       </>
     );
