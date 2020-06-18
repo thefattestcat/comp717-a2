@@ -9,7 +9,7 @@ class Nav extends Component {
     
     return (
       <Navbar variant='dark' sticky='top' bg='dark'>
-        <a className="navbar-brand">COMP717 Assignment 2</a>
+        <a className="navbar-brand" href="/">COMP717 Assignment 2</a>
         <Button>asd</Button>
       </Navbar>
     );

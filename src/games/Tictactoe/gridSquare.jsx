@@ -1,5 +1,4 @@
-import React, { Component, useState, useEffect } from 'react';
-import ReactDOM from 'react-dom';
+import React, { Component } from 'react';
 import './Tictactoe.css'
 
 class gridSquare extends Component {
@@ -13,13 +12,12 @@ class gridSquare extends Component {
     }
     this.handleClick = this.handleClick.bind(this);
     this.handleAI = this.handleAI.bind(this);
-    console.log(`constructor`, this.state)
   }
 
   //Refactor this
   UNSAFE_componentWillReceiveProps(newProps) {
-    console.log('newProps:', newProps)
-    if(newProps.player == 0){
+    //console.log('newProps:', newProps)
+    if(newProps.player === 0){
       this.setState({
         colour: newProps.colour,
         player: newProps.player
@@ -28,7 +26,6 @@ class gridSquare extends Component {
   }
 
   componentDidMount() {
-    console.log('DidMount')
     this.setState({
       colour: this.props.colour
     })
@@ -73,9 +70,9 @@ class gridSquare extends Component {
   changeCol = () => {
     let s = this.state.player
     let c;
-    if(s == 0) c = 'white';
-    if(s == 1) c = 'red';
-    if(s == 2) c = 'blue';
+    if(s === 0) c = 'white';
+    if(s === 1) c = 'red';
+    if(s === 2) c = 'blue';
     //console.log('c is ', c)
     this.setState({
       colour: c,

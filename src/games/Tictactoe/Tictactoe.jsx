@@ -1,7 +1,4 @@
 import React, { Component } from 'react';
-import { unmountComponentAtNode, findDOMNode } from 'react-dom';
-
-import ReactTestUtils from 'react';
 import {Container, Row, Col, Button} from 'react-bootstrap';
 import GridSquare from './gridSquare'
 import './Tictactoe.css'
@@ -37,6 +34,7 @@ class Tictactoe extends Component {
       moveArray: [],
       positionState: p,
       winner: '',
+      minmaxLevel: 0,
     }, () => {
       console.log('new game: ', this.state)
       let ng = this.createGrid();
@@ -44,12 +42,14 @@ class Tictactoe extends Component {
         grid: ng,
       }, () => {
         console.log('Grid mounted')
-        console.log(this.state.grid)
+        //console.log(this.state.grid)
           
         console.log('Game Started!')
-        if(this.state.startingPlayer == 'AI') {
-          this.aiMove();
+        if(this.state.startingPlayer === 'AI') {
+          //this.aiMove();
         }
+        let o = this.state.positionState
+        this.makeMove(o, 1,2)
       })
     })
   }
@@ -66,7 +66,7 @@ class Tictactoe extends Component {
 
   whoStart = () => {
     let p = this.state.startingPlayer;
-    if(p == 'Player') p = 'AI'
+    if(p === 'Player') p = 'AI'
     else p = 'Player';
     this.setState({
       startingPlayer: p
@@ -74,7 +74,7 @@ class Tictactoe extends Component {
   }
 
   checkPosition = (id) => {
-    return this.state.moveArray.indexOf(id) == -1;
+    return this.state.moveArray.indexOf(id) === -1;
   }
   
   checkWin = (boardState) => {
@@ -153,10 +153,11 @@ class Tictactoe extends Component {
     
     console.log('availPos', availPos)
     if(availPos.length > 0){
-      let d = availPos[Math.floor(Math.random() * availPos.length)]
-      console.log('Moving to ', d)
-      this.gs[d].current.handleAI();
-      this.makeMove(this.state.positionState,1,2)
+      //let d = availPos[Math.floor(Math.random() * availPos.length)]
+      //console.log('Moving to ', d)
+      //this.gs[d].current.handleAI();
+      const o = this.state.positionState;
+      this.makeMove(o,1,2)
     } else {
       console.log('no more moves')
     }
@@ -196,29 +197,40 @@ class Tictactoe extends Component {
    * @returns
    */
   makeMove = (boardState, p1, p2) => {
-    console.log("makeMove turn: ", p1)
-    if(!this.checkTerminal(boardState)) {
-      let empty = this.checkEmptyPositions(boardState);
-      let c = boardState;
-      if(empty.length > 0) {
-        c[empty[0]] = p1;
-        console.log('BugCheck: ', empty, c)
-        if(this.checkTerminal(c)) {
-          const w = this.checkWin(c);
-          if(w === -1) console.log('Draw')
-          if(w === 1) console.log('Game finished, winner = ', w)
-          console.log(c)
-          return boardState
+    let x = this.state.minmaxLevel;
+    x++;
+    const c = [...boardState];
+    this.setState({minmaxLevel: x}, () => {
+      console.log(`minmax: ${this.state.minmaxLevel}  Current Player: ${p1}`)
+      if(!this.checkTerminal(boardState) && this.state.minmaxLevel <= 3) {
+        let empty = this.checkEmptyPositions(boardState);
+        if(empty.length > 0) {
+          let k;
+          for(let i = 0; i < empty.length; i++) {
+            k = [...c];
+            console.log('Loop:', k, c)
+            k[empty[i]] = p1; //Iterate this
+            if(this.checkTerminal(k)) {
+              const w = this.checkWin(k)
+              if(w === -1) console.log('Draw')
+              if(w === 1) console.log('Game finished, winner = ', w)
+              console.log(k)
+              return k;
+            } 
+            console.log('makeMove: ', empty, k)
+            this.makeMove(k, p2, p1);
+          } 
         } 
-        console.log('makeMove: ', c)
-        this.makeMove(c, p2, p1);
-      } else {
-        console.log('Game over, Winner = ', this.checkWin(c),c)
+        else {
+          console.log('Game over, Winner = ', this.checkWin(c),c)
+        }
+      } 
+      
+      else {
+        console.log("Finished makeMove", boardState);
+        return boardState;
       }
-    } else {
-      console.log("Finished makeMove", boardState);
-      return boardState;
-    }
+    })
   } 
 
   minmax = () => {
