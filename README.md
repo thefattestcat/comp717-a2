@@ -1,4 +1,15 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## COMP717 - Artificial Intelligence Assignment 2
+Will upload this assignment onto heroku and/or AWS for online viewing. 
+
+## Pre-requisites
+
+Requires the latest versions of both `Node.js` and `NPM` installed onto your machine.
+Once they are both installed, clone this git repository. 
+Then, in the cloned project directory, run:
+
+##  `npm install` 
+
+to install all project dependencies.
 
 ## Available Scripts
 
