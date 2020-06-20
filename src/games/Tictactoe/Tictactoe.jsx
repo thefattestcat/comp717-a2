@@ -228,40 +228,40 @@ class Tictactoe extends Component {
    * @returns
    */
   makeMove = (boardState, p1, p2, depth, n) => {
+  if(this.state.minmaxLevel < depth){
     let x = this.state.minmaxLevel; x++;
     this.setState({minmaxLevel: x}, () => {
       console.log(`${x} \n`)
-      if(this.state.minmaxLevel <= depth) {  
         
-        //Check if terminal, return -10, 0, +10 score here.
-        if(this.checkTerminal(boardState)) {
-          const w = this.checkWin(boardState)
-          if(w === -1) console.log('Draw')
-          else console.log(`Game finished, winner= ${w}, depth=${this.state.minmaxLevel} n=${n} state=${boardState}`)
-          return boardState;
-        }
+      //Check if terminal, return -10, 0, +10 score here.
+      if(this.checkTerminal(boardState)) {
+        const w = this.checkWin(boardState)
+        if(w === -1) console.log('Draw')
+        else console.log(`Game finished, winner= ${w}, depth=${this.state.minmaxLevel} n=${n} state=${boardState}`)
+        return boardState;
+      }
 
-        //Try for more moves
-        let empty = this.checkEmptyPositions(boardState);
+      //Try for more moves
+      let empty = this.checkEmptyPositions(boardState);
 
-        if(empty.length > 0) {
-          let k;
-          for(let i = 0; i < empty.length; i++) {
-            const move = empty[i]; //Current move index
-            k = [...boardState];
-            k[move] = p1;
-            
-            //If state is not terminal, get score with evaluation function. 
-            let score = this.stateEval(k, p1, p2)
-            console.log(`${this.isOdd(this.state.minmaxLevel) == true ? 'max' : 'min'}: score=${score} move=[${move}] => [${k}]`)
-            //this.compareScore(move, score)
-            
-            //Go to next layer
-            this.makeMove(k, p2, p1, this.state.depth, empty[i])
-          } 
-        }
-      } 
+      if(empty.length > 0) {
+        let k;
+        for(let i = 0; i < empty.length; i++) {
+          const move = empty[i]; //Current move index
+          k = [...boardState];
+          k[move] = p1;
+          
+          //If state is not terminal, get score with evaluation function. 
+          let score = this.stateEval(k, p1, p2)
+          console.log(`${this.isOdd(this.state.minmaxLevel) == true ? 'max' : 'min'}: score=${score} move=[${move}] => [${k}]`)
+          //this.compareScore(move, score)
+          
+          //Go to next layer
+          this.makeMove(k, p2, p1, this.state.depth, empty[i])
+        } 
+      }
     })
+  }
   } 
 
   /**
@@ -291,93 +291,126 @@ class Tictactoe extends Component {
       [2, 4, 6],
     ]
 
-    function rowCheck (boardState, playerId) {
-      let rowVal = [];
-      let rowScore = 0;
-      for(let i = 0; i < rows.length; i++) {
-        const [a, b, c] = rows[i]; //[ 0, 1, 2]
-        if(boardState[a] === playerId) {
-          if(boardState[b] === 0 && boardState[c] === 0) {
-            rowScore++;
-            rowVal[i] = [a,b,c];
-          }
-        }
-        else if(boardState[b] === playerId) {
-          if(boardState[a] === 0 && boardState[c] === 0) {
-            rowScore++;
-            rowVal[i] = [a,b,c];
-          }
-        }
-        else if(boardState[c] === playerId) {
-          if(boardState[a] === 0 && boardState[b] === 0) {
-            rowScore++;
-            rowVal[i] = [a,b,c];
-          }
-        }
-      }
-      //if(rowScore > 0)console.log(rowScore, rowVal, boardState)
-      return rowScore;
-    }
-
-    function colCheck (boardState, playerId) {
-      let colVal = [];
-      let colScore = 0;
-      for(let i = 0; i< cols.length; i++) {
-        const [a, b, c] = cols[i];
-        if(boardState[a] === playerId) {
-          if(boardState[b] === 0 && boardState[c] === 0) {
-            colScore++;
-            colVal[i] = [a,b,c]
-          }
-        }
-        else if(boardState[b] === playerId) {
-          if(boardState[a] === 0 && boardState[c] === 0) {
-            colScore++;
-            colVal[i] = [a,b,c]
-          }
-        }
-        else if(boardState[c] === playerId) {
-          if(boardState[a] === 0 && boardState[b] === 0) {
-            colScore++;
-            colVal[i] = [a,b,c]
-          }
-        }
-      }
-      return colScore;
-    }
-
-    function diagCheck(boardState, playerId) {
-      let diagVal = [];
-      let diagScore = 0;
-      for(let i = 0; i< diags.length; i++) {
-        const [a, b, c] = diags[i];
-        if(boardState[a] === playerId) {
-          if(boardState[b] === 0 && boardState[c] === 0) {
-            diagScore++;
-            diagVal[i] = [a,b,c]
-          }
-        }
-        else if(boardState[b] === playerId) {
-          if(boardState[a] === 0 && boardState[c] === 0) {
-            diagScore++;
-            diagVal[i] = [a,b,c]
-          }
-        }
-        else if(boardState[c] === playerId) {
-          if(boardState[a] === 0 && boardState[b] === 0) {
-            diagScore++;
-            diagVal[i] = [a,b,c]
-          }
-        }
-      }
-      return diagScore;
-    }
-
     function x1 (boardState, playerId) {
-      return (rowCheck(boardState, playerId) + colCheck(boardState, playerId) + diagCheck(boardState, playerId));
+      function x1RowCheck (boardState, playerId) {
+        let rowVal = [];
+        let rowScore = 0;
+        for(let i = 0; i < rows.length; i++) {
+          const [a, b, c] = rows[i]; //[ 0, 1, 2]
+          if(boardState[a] === playerId) {
+            if(boardState[b] === 0 && boardState[c] === 0) {
+              rowScore++;
+              rowVal[i] = [a,b,c];
+            }
+          }
+          else if(boardState[b] === playerId) {
+            if(boardState[a] === 0 && boardState[c] === 0) {
+              rowScore++;
+              rowVal[i] = [a,b,c];
+            }
+          }
+          else if(boardState[c] === playerId) {
+            if(boardState[a] === 0 && boardState[b] === 0) {
+              rowScore++;
+              rowVal[i] = [a,b,c];
+            }
+          }
+        }
+        //if(rowScore > 0)console.log(rowScore, rowVal, boardState)
+        return rowScore;
+      }
+  
+      function x1ColCheck (boardState, playerId) {
+        let colVal = [];
+        let colScore = 0;
+        for(let i = 0; i< cols.length; i++) {
+          const [a, b, c] = cols[i];
+          if(boardState[a] === playerId) {
+            if(boardState[b] === 0 && boardState[c] === 0) {
+              colScore++;
+              colVal[i] = [a,b,c]
+            }
+          }
+          else if(boardState[b] === playerId) {
+            if(boardState[a] === 0 && boardState[c] === 0) {
+              colScore++;
+              colVal[i] = [a,b,c]
+            }
+          }
+          else if(boardState[c] === playerId) {
+            if(boardState[a] === 0 && boardState[b] === 0) {
+              colScore++;
+              colVal[i] = [a,b,c]
+            }
+          }
+        }
+        return colScore;
+      }
+  
+      function x1DiagCheck(boardState, playerId) {
+        let diagVal = [];
+        let diagScore = 0;
+        for(let i = 0; i< diags.length; i++) {
+          const [a, b, c] = diags[i];
+          if(boardState[a] === playerId) {
+            if(boardState[b] === 0 && boardState[c] === 0) {
+              diagScore++;
+              diagVal[i] = [a,b,c]
+            }
+          }
+          else if(boardState[b] === playerId) {
+            if(boardState[a] === 0 && boardState[c] === 0) {
+              diagScore++;
+              diagVal[i] = [a,b,c]
+            }
+          }
+          else if(boardState[c] === playerId) {
+            if(boardState[a] === 0 && boardState[b] === 0) {
+              diagScore++;
+              diagVal[i] = [a,b,c]
+            }
+          }
+        }
+        return diagScore;
+      }
+      return (x1RowCheck(boardState, playerId) + x1ColCheck(boardState, playerId) + x1DiagCheck(boardState, playerId));
     }
     
-    return x1(boardState, playerId) - x1(boardState, oppId)
+    function x2 (boardState, playerId) {
+      function x2RowCheck (boardState, playerId) {
+        let rowScore = 0;
+        for(let i = 0; i < rows.length; i++) {
+          const [a,b,c] = rows[i];
+          if(boardState[a] === playerId && boardState[b] === playerId && boardState[c] === 0) rowScore++;
+          else if(boardState[a] === playerId && boardState[c] === playerId && boardState[b] === 0) rowScore++;
+          else if(boardState[c] === playerId && boardState[b] === playerId && boardState[a] === 0) rowScore++;
+        }
+        return rowScore;
+      }
+      function x2ColCheck (boardState, playerId) {
+        let colScore = 0;
+        for(let i = 0; i < cols.length; i++) {
+          const [a,b,c] = cols[i];
+          if(boardState[a] === playerId && boardState[b] === playerId && boardState[c] === 0) colScore++;
+          else if(boardState[a] === playerId && boardState[c] === playerId && boardState[b] === 0) colScore++;
+          else if(boardState[c] === playerId && boardState[b] === playerId && boardState[a] === 0) colScore++;
+        }
+        return colScore;
+      }
+      function x2DiagCheck (boardState, playerId) {
+        let diagScore = 0;
+        for(let i = 0; i < diags.length; i++) {
+          const [a,b,c] = diags[i];
+          if(boardState[a] === playerId && boardState[b] === playerId && boardState[c] === 0) diagScore++;
+          else if(boardState[a] === playerId && boardState[c] === playerId && boardState[b] === 0) diagScore++;
+          else if(boardState[c] === playerId && boardState[b] === playerId && boardState[a] === 0) diagScore++;
+        }
+        return diagScore;
+      }
+      return (x2RowCheck(boardState, playerId) + x2ColCheck(boardState,playerId) + x2DiagCheck(boardState, playerId)); 
+    }
+
+    return ((3 * x2(boardState, playerId)) + x1(boardState, playerId)) - ((3 * x2(boardState, oppId)) + x1(boardState, oppId)); 
   }
 
   compareScore = (move, score) => {
