@@ -45,6 +45,9 @@ class Tictactoe extends Component {
     return (n % 2 === 0)
   }
 
+  /**
+   * @description Resets game state variables.
+   */
   newGame = () => {
     let p = []
     for(let i = 0; i < 9; i++)
@@ -77,6 +80,9 @@ class Tictactoe extends Component {
     })
   }
   
+  /**
+   * @description Increments turnCount then triggers aiMove it needed.
+   */
   incrementTurn = () => {
     let t = this.state.turnCount;
     if(t < 9) {
@@ -87,6 +93,9 @@ class Tictactoe extends Component {
     }
   }
 
+  /**
+   * @description Sets starting player
+   */
   whoStart = () => {
     let p = this.state.startingPlayer;
     if(p === 'Player') p = 'AI'
@@ -96,6 +105,13 @@ class Tictactoe extends Component {
     })
   }
 
+  /**
+   * 
+   * @param {Number} squareId index of square on grid (positions 0-8)
+   * @param {Number} playerId id of player
+   * @description sets state of grid position with the value of the player id (1 = player, 2 = AI)
+   * @returns {Promise} for component refs (gridSquare)
+   */
   setSquareState = (squareId, playerId) => {
     return new Promise ((resolve, reject) => {
       if(this.checkPosition(squareId)) {
@@ -252,7 +268,7 @@ class Tictactoe extends Component {
           k[move] = p1;
           
           //If state is not terminal, get score with evaluation function. 
-          let score = this.stateEval(k, p1, p2)
+          let score = this.stateEval(k, p1, p2) //Change to +/- number depending on max/min
           console.log(`${this.isOdd(this.state.minmaxLevel) == true ? 'max' : 'min'}: score=${score} move=[${move}] => [${k}]`)
           //this.compareScore(move, score)
           
@@ -274,6 +290,8 @@ class Tictactoe extends Component {
    * based upon the evaluation function given in the assignment documentation.
    * 
    * Eval(s) = 3*X2(s) + X1(s) - (3*O2(s) + O1(s))
+   * 
+   * Note: Does not take into account board symmetry (Reflections/rotations).
    */
   stateEval = (boardState, playerId, oppId) => {
     const rows = [
@@ -410,6 +428,7 @@ class Tictactoe extends Component {
       return (x2RowCheck(boardState, playerId) + x2ColCheck(boardState,playerId) + x2DiagCheck(boardState, playerId)); 
     }
 
+    //Add minmax turn check to return proper +/- values
     return ((3 * x2(boardState, playerId)) + x1(boardState, playerId)) - ((3 * x2(boardState, oppId)) + x1(boardState, oppId)); 
   }
 
