@@ -18,12 +18,23 @@ class Tictactoe extends Component {
       mode: '', //Not implemented (AI or 2-PLayer)
       startingPlayer: 'Player',
       depth: 2,
+      moveScores: [],
+      maxmin: [],
     };
 
   }
 
   componentDidMount() {
     console.log(React.version)
+  }
+
+  /**Util functions */
+  objectlength = (obj) => {
+    var size = 0, key;
+    for (key in obj) {
+        if (obj.hasOwnProperty(key)) size++;
+    }
+    return size;
   }
 
   newGame = () => {
@@ -37,7 +48,9 @@ class Tictactoe extends Component {
       moveArray: [],
       positionState: p,
       winner: '',
-      minmaxLevel: 0,
+      minmaxLevel: -1,
+      moveScores: [],
+      maxmin: [],
     }, () => {
       console.log('new game: ', this.state)
       let ng = this.createGrid();
@@ -49,10 +62,8 @@ class Tictactoe extends Component {
           
         console.log('Game Started!')
         if(this.state.startingPlayer === 'AI') {
-          //this.aiMove();
+          this.makeMove(this.state.positionState, 2,1, this.state.depth, 0)
         }
-        let o = this.state.positionState
-        this.makeMove(o, 1,2, this.state.depth)
         console.log('Finished!')
       })
     })
@@ -137,8 +148,6 @@ class Tictactoe extends Component {
       console.log('no more moves')
     }
   }
-
-
   
   /** Minmax */
   
@@ -205,37 +214,69 @@ class Tictactoe extends Component {
    * @param {positionArrayState} boardState 
    * @param {Number} p1 - playerId of turn i
    * @param {Number} p2 - playerId of turn i+1
+   * @param {Number} depth - Maximum depth of search
+   * @param {Number} n - Index of last move made
    * @description recursively iterates mves from boardState until terminal state is reached.
    * @returns
    */
-  makeMove = (boardState, p1, p2, depth) => {
+  makeMove = (boardState, p1, p2, depth, n) => {
     let x = this.state.minmaxLevel;
     x++;
     this.setState({minmaxLevel: x}, () => {
       
       if(this.state.minmaxLevel <= depth) {  
         
+        //Check if terminal, return -10, 0, +10 score here.
         if(this.checkTerminal(boardState)) {
           const w = this.checkWin(boardState)
           if(w === -1) console.log('Draw')
-          if(w === 0 ) console.log('bug: ', boardState, w)
-          else console.log('Game finished, winner= ', w)
+          else console.log(`Game finished, winner= ${w}, depth=${this.state.minmaxLevel} n=${n} state=${boardState}`)
           return boardState;
-        } 
+        }
 
+        //Try for more moves
         let empty = this.checkEmptyPositions(boardState);
         if(empty.length > 0) {
           let k;
           for(let i = 0; i < empty.length; i++) {
             k = [...boardState];
             k[empty[i]] = p1;
-            this.makeMove(k, p2, p1, this.state.depth);
-          } 
-        
-        
-        }
-      } 
+            //If state is not terminal, get score with evaluation function. 
+            let score = this.stateEval(k, p1, p2)
+            console.log(score, k)
+            //Track score of current level with sibling states, p1 wants max, p2 wants min for each level.
+            let j = [...this.state.moveScores];
+            let maxmin = [...this.state.maxmin];
+            const level = this.state.minmaxLevel;
 
+            if(this.state.moveScores.length === 0){
+              j[level] = score;
+              maxmin[level] = n;
+            } 
+            else {
+              if( Math.abs(this.state.turnCount % 2) === 1) {
+                if(typeof this.state.moveScores[level] === 'undefined' || score > this.state.moveScores[level])
+                  j[level] = score;
+                  maxmin[level] = n;
+              }
+              if(this.state.turnCount % 2 === 0) {
+                if(typeof this.state.moveScores[level] === 'undefined' || score < this.state.moveScores[level])
+                  j[level] = score;
+                  maxmin[level] = n;
+              }
+            }
+
+            this.setState({
+              moveScores: j,
+              maxmin: maxmin
+            }, () => {
+              //console.log('moveScores:',this.state.moveScores, this.state.maxmin)
+            })
+            this.makeMove(k, p2, p1, this.state.depth, empty[i])
+          } 
+        }
+
+      } 
     })
   } 
 
@@ -250,25 +291,85 @@ class Tictactoe extends Component {
    * 
    * Eval(s) = 3*X2(s) + X1(s) - (3*O2(s) + O1(s))
    */
-  stateEval = (boardState) => {
-    function X2 (boardState) {
-      const openLines = [
-        [0, 1, 2],
-        [0, 3, 6],
-        [0, 4, 8],
-        [1, 4, 7],
-        [2, 5, 8],
-        [2, 4, 6],
-        [3, 4, 5],
-        [6, 7, 8],
-      ];
-      for (let i = 0; i < openLines.length; i++) {
-        const [a, b, c] = openLines[i];
-        if (boardState[a] !== 2 && boardState[a] === boardState[b] && boardState[a] === boardState[c]){
-          return a;
-        } 
+  stateEval = (boardState, playerId, oppId) => {
+    const rows = [
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+    ];
+    
+    const cols = [
+      [0, 3, 6],
+      [2, 5, 8],
+      [1, 4, 7],
+    ]
+    const diags = [
+      [0, 4, 8],
+      [2, 4, 6],
+    ]
+
+    function rowCheck (boardState, playerId) {
+      let rowVal = [];
+      let rowScore = 0;
+      for(let i = 0; i < rows.length; i++) {
+        const [a, b, c] = rows[i]; //[ 0, 1, 2]
+        if(boardState[a] === playerId) {
+          if(boardState[b] === 0 && boardState[c] === 0) {
+            rowScore++;
+            rowVal[i] = [a,b,c];
+          }
+        }
+        else if(boardState[b] === playerId) {
+          if(boardState[a] === 0 && boardState[c] === 0) {
+            rowScore++;
+            rowVal[i] = [a,b,c];
+          }
+        }
+        else if(boardState[c] === playerId) {
+          if(boardState[a] === 0 && boardState[b] === 0) {
+            rowScore++;
+            rowVal[i] = [a,b,c];
+          }
+        }
       }
+      //if(rowScore > 0)console.log(rowScore, rowVal, boardState)
+      return rowScore;
     }
+
+    function colCheck (boardState, playerId) {
+      let colVal = [];
+      let colScore = 0;
+      for(let i = 0; i< cols.length; i++) {
+        const [a, b, c] = cols[i];
+        if(boardState[a] === playerId) {
+          if(boardState[b] === 0 && boardState[c] === 0) {
+            colScore++;
+            colVal[i] = [a,b,c]
+          }
+        }
+        else if(boardState[b] === playerId) {
+          if(boardState[a] === 0 && boardState[c] === 0) {
+            colScore++;
+            colVal[i] = [a,b,c]
+          }
+        }
+        else if(boardState[c] === playerId) {
+          if(boardState[a] === 0 && boardState[b] === 0) {
+            colScore++;
+            colVal[i] = [a,b,c]
+          }
+        }
+      }
+      return colScore;
+    }
+
+    function x1 (boardState, playerId) {
+      return (rowCheck(boardState, playerId) + colCheck(boardState, playerId));
+    }
+
+    const s = [...boardState];
+    //Math.floor(Math.random() * 10) placeholder
+    return x1(boardState, playerId)//i1(boardState, playerId, oppId)//(3*i2(s) + i1(s) - (3*i2(s) + i1(s)))
   }
 
   minmax = () => {
@@ -332,7 +433,7 @@ class Tictactoe extends Component {
                 value={this.state.depth}
                 onChange={changeEvent => this.setState({depth: changeEvent.target.value})}
                 min={0}
-                max={7}
+                max={9}
                 tooltipStyle={{display: 'none'}}
               />
             </div>
