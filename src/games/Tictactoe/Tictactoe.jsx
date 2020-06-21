@@ -60,8 +60,8 @@ class Tictactoe extends Component {
       positionState: p,
       winner: '',
       minmaxLevel: 0,
-      minmaxMoves: [], minmaxMoveScores: [], //minmax moves & scores for those moves
       bestMax: -100, bestMin: 100,
+      //bestMoveMax: [], bestMoveMin: [],
     }, () => {
       console.log('new game: ', this.state)
       let ng = this.createGrid();
@@ -73,8 +73,8 @@ class Tictactoe extends Component {
           
         console.log('Game Started!')
         if(this.state.startingPlayer === 'AI') {
-         let l = this.makeMove(this.state.positionState, 2,1, this.state.depth, 0);
-         console.log('l=',l)
+         //let l = this.makeMove(this.state.positionState, 2,1, this.state.depth, 0);
+          this.aiMove();
         }
         console.log('Finished!')
       })
@@ -147,31 +147,10 @@ class Tictactoe extends Component {
   }
 
   /** AI */
-  aiMove = () => {
-    /**
-    * 1) Get positionState array and list all available options in availPos
-    * 2) Put each position through evaluation func
-    * 3) choose position with highest eval value;
-    */
-    //s = current board state,
-    //Eval(s) = 3X2(s) + X1(s) − (3O2(s) + O1(s))
-    
-    let availPos = [];
-    console.log(this.state.positionState)
-    
-    for(let i = 0; i< this.state.positionState.length; i++) {
-      if(this.state.positionState[i] === 0) {
-        availPos.push(i)
-      }
-    }
-    
-    console.log('availPos', availPos)
-    if(availPos.length > 0){
-      const o = this.state.positionState;
-      this.makeMove(o,1,2, this.state.depth)
-    } else {
-      console.log('no more moves')
-    }
+  aiMove = async () => {
+    let pos = await this.makeMove(this.state.positionState, 2, 1, this.state.depth)
+    console.log(`Ai moving to [${pos}]`)
+    this.gs[pos].current.handleAI()
   }
   
   /** Minmax */
@@ -245,64 +224,69 @@ class Tictactoe extends Component {
    * @returns
    */
   makeMove = (boardState, p1, p2, depth, n, score) => {
-    if(this.state.minmaxLevel <= depth) {
-      let x = this.state.minmaxLevel; x++;
-      this.setState({minmaxLevel: x}, () => {
-        console.log(`${x} \n`)
-
-        let empty = this.checkEmptyPositions(boardState);
-        
-        if(empty.length > 0) {
-          //MinMax score checks
-          if(this.isOdd(this.state.minmaxLevel)) {
-            let currentBest = this.state.bestMax;
-            let bestMove;
-            let k, score, move;
-            for(let i = 0; i < empty.length; i++) {
-              move = empty[i]; //Current move index
-              k = [...boardState];
-              k[move] = p1;
-              score = this.stateEval(k, p1, p2);  
-              console.log(`score=${score} bestMax=${currentBest} move=[${move}] => [${k}]`)
-              if(score > currentBest) {
-                currentBest = score;
-                bestMove = move;
+    return new Promise ((resolve, reject) => {
+      if(this.state.minmaxLevel <= depth) {
+        let x = this.state.minmaxLevel; x++;
+        this.setState({minmaxLevel: x}, () => {
+          console.log(`${x} \n`)
+  
+          let empty = this.checkEmptyPositions(boardState);
+          
+          if(empty.length > 0) {
+            //MinMax score checks
+            if(this.isOdd(this.state.minmaxLevel)) {
+              let currentBest = this.state.bestMax;
+              let bestMove;
+              let k, score, move;
+              for(let i = 0; i < empty.length; i++) {
+                move = empty[i]; //Current move index
+                k = [...boardState];
+                k[move] = p1;
+                score = this.stateEval(k, p1, p2);  
+                console.log(`score=${score} bestMax=${currentBest} move=[${move}] => [${k}]`)
+                if(score > currentBest) {
+                  currentBest = score;
+                  bestMove = move;
+                }
+                this.makeMove(k, p2, p1, this.state.depth, move, score)
+              }            
+              if(currentBest > this.state.bestMax) {
+                this.state.bestMax = currentBest;
+                this.state.bestMoveMax = bestMove;
+                console.log('Best move for max: ', currentBest, bestMove);
               }
-              this.makeMove(k, p2, p1, this.state.depth, move, score)
-            }            
-            if(currentBest > this.state.bestMax) {
-              this.state.bestMax = score;
-              console.log('Best move for max: ', currentBest, bestMove);
+              resolve(bestMove)
             }
-            return currentBest; 
-          }
-          else {
-            let currentBest = this.state.bestMin;
-            let bestMove;
-            let k, score, move;
-            for(let i = 0; i < empty.length; i++) {
-              move = empty[i]; //Current move index
-              k = [...boardState];
-              k[move] = p1;
-              score = this.stateEval(k, p1, p2);  
-              score !== 0 ? score = (score * -1) : score = score;
-              console.log(`score=${score} bestMin=${currentBest} move=[${move}] => [${k}]`)
-              if(score < currentBest) {
-                currentBest = score;
-                bestMove = move;
+            else {
+              let currentBest = this.state.bestMin;
+              let bestMove;
+              let k, score, move;
+              for(let i = 0; i < empty.length; i++) {
+                move = empty[i]; //Current move index
+                k = [...boardState];
+                k[move] = p1;
+                score = this.stateEval(k, p1, p2);  
+                score !== 0 ? score = (score * -1) : score = score;
+                console.log(`score=${score} bestMin=${currentBest} move=[${move}] => [${k}]`)
+                if(score < currentBest) {
+                  currentBest = score;
+                  bestMove = move;
+                }
+                this.makeMove(k, p2, p1, this.state.depth, move)
               }
-              this.makeMove(k, p2, p1, this.state.depth, move)
+              if(currentBest < this.state.bestMin) {
+                this.state.bestMin = currentBest;
+                this.state.bestMoveMin = bestMove;
+                console.log('Best move for min: ', currentBest, bestMove);
+              }
+              resolve(bestMove)
             }
-            if(currentBest < this.state.bestMin) {
-              this.state.bestMin = currentBest;
-              console.log('Best move for min: ', currentBest, bestMove);
-            }
-            return currentBest;
-          }
-        } 
-        
-      })
-    }
+          } 
+          
+        })
+      }
+    })
+    
                   
   } 
 
