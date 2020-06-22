@@ -575,7 +575,9 @@ class Tictactoe extends Component {
               <br></br>
               The game checks for a winner from the 5th move onwards.
               <br></br>
-              <b>Mode: {this.state.mode}</b>
+              <b>Note:</b>
+              <br></br>
+              Depth slider not working! Needs to take into account what player is max and min!
             </p>
             <div>
               <p>Search Depth: {this.state.depth}</p>
