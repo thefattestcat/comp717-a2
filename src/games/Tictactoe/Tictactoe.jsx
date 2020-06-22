@@ -17,9 +17,11 @@ class Tictactoe extends Component {
       positionState: [], //Who owns each square (0-8), 0 = empty, 1 = player, 2 = AI
       mode: '', //Not implemented (AI or 2-PLayer)
       startingPlayer: 'Player',
+      startingPlayerId: 1,
       depth: 2,
       moveScores: [],
       maxmin: [],
+      depth: 2,
     };
 
   }
@@ -54,29 +56,33 @@ class Tictactoe extends Component {
       p[i] = 0;
     
     this.setState( {
-      turnCount: 0,
+      turnCount: 1,
       whosTurn: '',
       moveArray: [],
       positionState: p,
       winner: '',
       minmaxLevel: 0,
       bestMax: -100, bestMin: 100,
-      //bestMoveMax: [], bestMoveMin: [],
+      bestMoveMax: {}, bestMoveMin: {},
     }, () => {
       console.log('new game: ', this.state)
       let ng = this.createGrid();
       this.setState({
         grid: ng,
-      }, () => {
+      }, async () => {
         console.log('Grid mounted')
         //console.log(this.state.grid)
           
         console.log('Game Started!')
         if(this.state.startingPlayer === 'AI') {
-         //let l = this.makeMove(this.state.positionState, 2,1, this.state.depth, 0);
-          this.aiMove();
+          await this.aiMove()
+            .then( pos => {
+              this.gs[pos].current.handleAI()
+            })
         }
         console.log('Finished!')
+        
+        
       })
     })
   }
@@ -88,9 +94,15 @@ class Tictactoe extends Component {
     let t = this.state.turnCount;
     if(t < 9) {
       t++;
-      this.setState({ turnCount: t }, () => {
-        this.aiMove();
+      const b = this.state.positionState;
+      this.setState({ turnCount: t }, async () => {
+        console.log('Incrementing turn', this.isOdd(t))
+        await this.aiMove()
+        .then( pos => {
+          this.gs[pos].current.handleAI()
+        }) 
       })
+      
     }
   }
 
@@ -99,10 +111,15 @@ class Tictactoe extends Component {
    */
   whoStart = () => {
     let p = this.state.startingPlayer;
-    if(p === 'Player') p = 'AI'
-    else p = 'Player';
+    let i = this.state.startingPlayerId;
+    if(p === 'Player') {
+      p = 'AI';
+      i = 2;
+    }
+    else p = 'Player'; i = 1;
     this.setState({
-      startingPlayer: p
+      startingPlayer: p,
+      startingPlayerId: i,
     })
   }
 
@@ -113,7 +130,7 @@ class Tictactoe extends Component {
    * @description sets state of grid position with the value of the player id (1 = player, 2 = AI)
    * @returns {Promise} for component refs (gridSquare)
    */
-  setSquareState = (squareId, playerId) => {
+  setSquareState = async (squareId, playerId) => {
     return new Promise ((resolve, reject) => {
       if(this.checkPosition(squareId)) {
         let j = this.state.moveArray.concat(squareId)
@@ -132,26 +149,39 @@ class Tictactoe extends Component {
           resolve(this.state.positionState[squareId])
         }) 
       } else {
-        console.log('Position already filled')
+        console.log(`Position already filled [${squareId}] player=${playerId}`)
         reject(this.state.positionState[squareId]) 
       }
     })
   }
 
-  /** Component Callbacks */
-  squaresCB = (state) => {
-    return this.setSquareState(state.id, 1); //(positionId, playerId= 1, for player)
+  sleep = (ms) => {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
-  aiCB = (id) => {
-    return this.setSquareState(id, 2);
+
+  /** Component Callbacks */
+  squaresCB = async (state) => {
+    return await this.setSquareState(state.id, 1); //(positionId, playerId= 1, for player)
+  }
+  aiCB = async (id) => {
+    return await this.setSquareState(id, 2);
+  }
+  incrementCB = async () => {
+    await this.aiMove()
+      .then( pos => {
+        this.gs[pos].current.handleAI()
+      })
   }
 
   /** AI */
   aiMove = async () => {
-    let pos = await this.makeMove(this.state.positionState, 2, 1, this.state.depth)
-    console.log(`Ai moving to [${pos}]`)
-    this.gs[pos].current.handleAI()
-  }
+    return new Promise ( async resolve => {
+      console.log(`AI turn ${this.state.turnCount} [${this.state.positionState}]`)
+      await this.makeMove(this.state.positionState, 2, 1, this.state.depth, null, this.state.depth)
+      console.log(`AI move to [${this.state.bestMoveMax}]`)
+      resolve(this.state.bestMoveMax);
+    })
+  } 
   
   /** Minmax */
   
@@ -223,71 +253,56 @@ class Tictactoe extends Component {
    * @description recursively iterates mves from boardState until terminal state is reached.
    * @returns
    */
-  makeMove = (boardState, p1, p2, depth, n, score) => {
-    return new Promise ((resolve, reject) => {
-      if(this.state.minmaxLevel <= depth) {
-        let x = this.state.minmaxLevel; x++;
-        this.setState({minmaxLevel: x}, () => {
-          console.log(`${x} \n`)
-  
-          let empty = this.checkEmptyPositions(boardState);
-          
-          if(empty.length > 0) {
-            //MinMax score checks
-            if(this.isOdd(this.state.minmaxLevel)) {
-              let currentBest = this.state.bestMax;
-              let bestMove;
-              let k, score, move;
-              for(let i = 0; i < empty.length; i++) {
-                move = empty[i]; //Current move index
-                k = [...boardState];
-                k[move] = p1;
-                score = this.stateEval(k, p1, p2);  
-                console.log(`score=${score} bestMax=${currentBest} move=[${move}] => [${k}]`)
-                if(score > currentBest) {
-                  currentBest = score;
-                  bestMove = move;
-                }
-                this.makeMove(k, p2, p1, this.state.depth, move, score)
-              }            
-              if(currentBest > this.state.bestMax) {
-                this.state.bestMax = currentBest;
-                this.state.bestMoveMax = bestMove;
-                console.log('Best move for max: ', currentBest, bestMove);
-              }
-              resolve(bestMove)
-            }
-            else {
-              let currentBest = this.state.bestMin;
-              let bestMove;
-              let k, score, move;
-              for(let i = 0; i < empty.length; i++) {
-                move = empty[i]; //Current move index
-                k = [...boardState];
-                k[move] = p1;
-                score = this.stateEval(k, p1, p2);  
-                score !== 0 ? score = (score * -1) : score = score;
-                console.log(`score=${score} bestMin=${currentBest} move=[${move}] => [${k}]`)
-                if(score < currentBest) {
-                  currentBest = score;
-                  bestMove = move;
-                }
-                this.makeMove(k, p2, p1, this.state.depth, move)
-              }
-              if(currentBest < this.state.bestMin) {
-                this.state.bestMin = currentBest;
-                this.state.bestMoveMin = bestMove;
-                console.log('Best move for min: ', currentBest, bestMove);
-              }
-              resolve(bestMove)
-            }
-          } 
-          
-        })
+  makeMove = (boardState, p1, p2, depth, n, level) => {
+    //return new Promise ( async resolve => {
+      if(level === depth) {
+        this.state.bestMax = -100;
       }
-    })
-    
-                  
+      if(level === 0) {
+        let currentBest = this.state.bestMax;
+        let bestMove = this.state.bestMoveMax;
+        let score = this.stateEval(boardState, p1, p2);
+        console.log(`score=${score}, currentBest=${currentBest}`)  
+        if(score >= currentBest) {
+          this.state.bestMax = score;
+          this.state.bestMoveMax = n;
+          console.log(`FinalMax: Level[${level}] score=${score} (bestMax=${currentBest} bestMove=[${bestMove}]) move=[${n}] => [${boardState}]`)
+        }
+        console.log(`resolving [${this.state.bestMoveMax}]`)
+        return (this.state.bestMoveMax)
+      }
+      else if(level > 0){
+        console.log(`${p1}: level=[${level}] depth=${depth} boardState=[${boardState}]`)
+        let empty = this.checkEmptyPositions(boardState);  
+        if(empty.length > 0) {
+          //MinMax score checks
+          if(p1 === 2) {
+            console.log('MAX!')
+            for(let i = 0; i < empty.length; i++) {
+              const move = empty[i]; //Current move index
+              let k = [...boardState];
+              k[move] = p1;
+              if(level > 0) {
+                let l = level; l--
+                (this.makeMove(k, p2, p1, this.state.depth, move, l))
+              }
+            }  
+          }
+          else {
+            console.log('MIN!')
+            for(let i = 0; i < empty.length; i++) {
+              const move = empty[i]; //Current move index
+              let k = [...boardState];
+              k[move] = p1;            
+              if(level > 0) {
+                let l = level; l--
+                (this.makeMove(k, p1, p2, this.state.depth, move, l))
+              }
+            }
+          }
+        } 
+      }
+    //})
   } 
 
   /**
@@ -448,6 +463,7 @@ class Tictactoe extends Component {
         if(w === 2) return -10;
       }
     }
+
     //if boardState is not terminal, return evaluation score
     return ((3 * x2(boardState, playerId)) + x1(boardState, playerId)) - ((3 * x2(boardState, oppId)) + x1(boardState, oppId)); 
   }
@@ -491,24 +507,6 @@ class Tictactoe extends Component {
     
   }
 
-  minmax = () => {
-    /**
-     * 1. Store current boardState and current players turn (1 or 2).
-     */
-    let b = this.state.positionState;
-
-    if (this.checkTerminal(b) === true) {
-      if (this.checkWin(b) === 1) {
-        return  10; 
-      } else if (this.checkWin(b) === 2) {  
-        return -10;
-      } else {
-        return 0;
-      }
-    }
-     
-  }
-
   //**Div stuff */
   createGrid = () => {
     let sqs = [];
@@ -519,6 +517,7 @@ class Tictactoe extends Component {
         <GridSquare 
           parentCB={this.squaresCB}
           aiCB={this.aiCB} 
+          incrementCB={this.incrementCB}
           id={i} 
           state={this.state.positionState[i]} 
           colour={'white'}
@@ -551,7 +550,7 @@ class Tictactoe extends Component {
               <RangeSlider
                 value={this.state.depth}
                 onChange={changeEvent => this.setState({depth: changeEvent.target.value})}
-                min={0}
+                min={1}
                 max={9}
                 tooltipStyle={{display: 'none'}}
               />
@@ -561,7 +560,7 @@ class Tictactoe extends Component {
           </Col>
           <Col md="8" xs="12">
             <div className="align-content-center">
-              <div className="grid" onClick={this.incrementTurn}>
+              <div className="grid">
                 {this.state.grid}
               </div>
             </div>

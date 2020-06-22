@@ -10,7 +10,8 @@ class Nav extends Component {
     return (
       <Navbar variant='dark' sticky='top' bg='dark'>
         <a className="navbar-brand" href="/">COMP717 Assignment 2</a>
-        <Button>asd</Button>
+        <Button>Tic-Tac-Toe</Button>
+        <Button>Takeaway</Button>
       </Navbar>
     );
   }

@@ -12,6 +12,7 @@ class gridSquare extends Component {
     }
     this.handleClick = this.handleClick.bind(this);
     this.handleAI = this.handleAI.bind(this);
+    this.handleIncrement = this.handleIncrement.bind(this);
   }
 
   //Refactor this
@@ -46,6 +47,7 @@ class gridSquare extends Component {
           player: s
         }, () => {
           this.changeCol();
+          this.handleIncrement()
         })
       })
       .catch( (err) => {
@@ -65,6 +67,10 @@ class gridSquare extends Component {
       .catch( (err) => {
         console.log(err)
       })
+  }
+
+  handleIncrement() {
+    this.props.incrementCB()
   }
 
   changeCol = () => {
