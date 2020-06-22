@@ -178,7 +178,7 @@ class Tictactoe extends Component {
     return new Promise ( async resolve => {
       console.log(`AI turn ${this.state.turnCount} [${this.state.positionState}]`)
       await this.makeMove(this.state.positionState, 2, 1, this.state.depth, null, this.state.depth)
-      console.log(`AI move to [${this.state.bestMoveMax}]`)
+      console.log(`AI move to [${this.state.bestMoveMax}] => [${this.state.positionState}]`)
       resolve(this.state.bestMoveMax);
     })
   } 
