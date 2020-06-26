@@ -23,7 +23,8 @@ class Tictactoe extends Component {
       moveScores: [],
       maxmin: [],
       depth: 1,
-      logConsole: true, //Toggle evaluation scores logging to console
+      logConsole: false, //Toggle evaluation scores logging to console
+      endTime: 0,
     };
 
     this.maxPlayer = 1;
@@ -36,22 +37,6 @@ class Tictactoe extends Component {
     this.bestMin = 100;
     this.bestMoveMin = null;
     this.min = {}
-  }
-
-  foo = (i) => {
-    console.log('foo',i)
-    if(i > this.state.counter) {
-      this.setState({ counter: i }, () => {
-        console.log(this.state.counter)
-       })
-    } 
-    return i < 5 ? this.foo(i + 1): null;
-  }
-  
-  bar = () => {
-    console.log(this.g)
-    //for(let i = 0; i < 5; i++)
-    //  this.foo(i)
   }
 
   componentDidMount() {
@@ -247,6 +232,9 @@ class Tictactoe extends Component {
         let startTime = Date.now();
         let maxMove = await this.minimax(this.state.positionState, this.maxPlayer, this.state.depth, 0, this.state.depth)
         let endTime = (Date.now() - startTime)
+        this.setState({
+          endTime: endTime
+        })
         console.log(`Max:AI move to [${maxMove.move}] score:'${maxMove.score}' => [${this.state.positionState}] (${endTime}ms)`)
         resolve(maxMove.move);
       }
@@ -254,6 +242,9 @@ class Tictactoe extends Component {
         let startTime = Date.now();
         let minMove = await this.minimax(this.state.positionState, this.minPlayer, this.state.depth, 0, this.state.depth)
         let endTime = (Date.now() - startTime)
+        this.setState({
+          endTime: endTime
+        })
         console.log(`Min: AI move to [${minMove.move}] score:'${minMove.score}' => [${this.state.positionState}] (${endTime}ms)`)
         resolve(minMove.move);
       }
@@ -626,7 +617,7 @@ class Tictactoe extends Component {
   }
    
   render() {
-    let slider = <RangeSlider value={this.state.depth} onChange={changeEvent => this.setState({depth: changeEvent.target.value})} min={1} max={9} tooltipStyle={{display: 'none'}}/>;
+    let slider = <RangeSlider value={this.state.depth} onChange={changeEvent => this.setState({depth: changeEvent.target.value})} min={1} max={7} tooltipStyle={{display: 'none'}}/>;
     return (
       <>
       <Container>
@@ -641,7 +632,7 @@ class Tictactoe extends Component {
               <br></br>
               <br></br>
               <b>
-                <span style={{color: 'red'}}>Depth values &gt;= 5 may take a while!</span>
+                <span style={{color: 'red'}}>If console logging is enabled, depth values &gt;= 5 may take a while!</span>
               </b>
               <br></br>
               <br></br>
@@ -665,8 +656,8 @@ class Tictactoe extends Component {
                 {this.state.grid}
               </div>
             </div>
-            <div style={{paddingTop: '20px'}}>
-              <h3>Move #{this.state.turnCount}:  <span style={{color: "green"}}>{this.state.whosTurn}</span></h3>
+            <div style={{paddingTop: '20px'}}>  
+              <h3>Move #{this.state.turnCount}:  <span style={{color: "green"}}>{this.state.endTime}ms</span></h3>
               <h3>Winner:   <span style={{color: "green"}}>{this.state.winner}</span></h3>
             </div>
             
