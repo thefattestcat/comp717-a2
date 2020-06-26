@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import {Container, Row, Col, Button} from 'react-bootstrap';
+import {Container, Row, Col, Button, FormCheck} from 'react-bootstrap';
 import RangeSlider from 'react-bootstrap-range-slider';
 
 import GridSquare from './gridSquare'
@@ -23,7 +23,7 @@ class Tictactoe extends Component {
       moveScores: [],
       maxmin: [],
       depth: 1,
-      counter: 0
+      logConsole: true, //Toggle evaluation scores logging to console
     };
 
     this.maxPlayer = 1;
@@ -166,6 +166,18 @@ class Tictactoe extends Component {
     })
   }
 
+  logToConsole = () => {
+    if(this.state.logConsole) {
+      this.setState({
+        logConsole: false,
+      })
+    } else {
+      this.setState({
+        logConsole: true
+      })
+    }
+  }  
+
   setMinMax = () => {
     let max = this.state.startingPlayerId;
     let min; 
@@ -230,15 +242,19 @@ class Tictactoe extends Component {
   makeMove = async () => {
     return new Promise ( async resolve => {
       console.log(`AI turn ${this.state.turnCount} [${this.state.positionState}]`)
+
       if(this.state.maxPlayer === 2){
+        let startTime = Date.now();
         let maxMove = await this.minimax(this.state.positionState, this.maxPlayer, this.state.depth, 0, this.state.depth)
-        console.log(maxMove)
-        console.log(`Max:AI move to [${this.bestMoveMax}] => [${this.state.positionState}]`)
+        let endTime = (Date.now() - startTime)
+        console.log(`Max:AI move to [${maxMove.move}] score:'${maxMove.score}' => [${this.state.positionState}] (${endTime}ms)`)
         resolve(maxMove.move);
       }
       else { 
+        let startTime = Date.now();
         let minMove = await this.minimax(this.state.positionState, this.minPlayer, this.state.depth, 0, this.state.depth)
-        console.log(`Min: AI move to [${this.bestMoveMin}] => [${this.state.positionState}]`)
+        let endTime = (Date.now() - startTime)
+        console.log(`Min: AI move to [${minMove.move}] score:'${minMove.score}' => [${this.state.positionState}] (${endTime}ms)`)
         resolve(minMove.move);
       }
     })
@@ -314,16 +330,6 @@ class Tictactoe extends Component {
     return false;
   }
 
-  recursive = (depth) => {
-    this.setState({
-      counter: depth //Updated state that I need to use
-    }, () => {
-      let k = this.state.counter + 1;
-      console.log('depth', k)
-      return depth < 10 ? this.recursive(k) : Promise.resolve()
-    })
-  }
-
   /**
    * 
    * @param {positionArrayState} boardState 
@@ -343,7 +349,7 @@ class Tictactoe extends Component {
 
     if(level === 0 || this.checkTerminal(boardState)) {
       let score = this.stateEval(boardState);
-      console.log(`Evaluate [${level}] max=${this.bestMax}[${this.bestMoveMax}] score=${score} move=[${move}] => [${boardState}]`)
+      if(this.state.logConsole) console.log(`LeafNode=[${player === this.maxPlayer ? 'Max' : 'Min'}]: score=${score} move=[${move}] => [${boardState}]`)
       return {score: score, move: move};
     }
     
@@ -363,8 +369,6 @@ class Tictactoe extends Component {
             maxScore = Math.max(result, this.bestMax)
             moves.push({move: move, score: result.score});
           }
-          console.log('\n')
-          console.log(moves)
           
           let bestMove;
           let bestScore = -1000;
@@ -374,7 +378,6 @@ class Tictactoe extends Component {
               bestMove = i;
             }
           }
-          console.log(moves[bestMove])
           return moves[bestMove];  
         }
         //Min
@@ -388,8 +391,6 @@ class Tictactoe extends Component {
             minScore = Math.min(minScore, this.bestMin)
             moves.push({move: move, score: result.score});
           }
-          console.log('\n')
-          console.log(moves)
           
           let bestMove;
           let bestScore = 1000;
@@ -399,7 +400,6 @@ class Tictactoe extends Component {
               bestMove = i;
             }
           }
-          console.log(moves[bestMove])
           return moves[bestMove];  
         }
         
@@ -641,20 +641,23 @@ class Tictactoe extends Component {
               <br></br>
               <br></br>
               <b>
-                <span style={{color: 'red'}}>Depth slider not working! Needs to take into account what player is max and min!</span>
+                <span style={{color: 'red'}}>Depth values &gt;= 5 may take a while!</span>
               </b>
               <br></br>
-              <b>Note:</b> AI seems to be playing perfectly with default depth of 2.
-              
+              <br></br>
+              <b>Note:</b> to view console, press <i>F12</i> on chrome or <i>CTRL+SHIFT+J</i> on firefox
+              <br></br>
+              <br></br>
             </p>
             <div>
               <p>Search Depth: {this.state.depth}</p>
               {
-              slider
+                slider
               }
             </div>
             <Button onClick={this.whoStart}>Start: {this.state.startingPlayer}</Button>
             <Button onClick={this.newGame}>New Game</Button>
+            <FormCheck onClick={this.logToConsole} label={'Log to console?'} defaultChecked={this.state.logConsole}/>
           </Col>
           <Col md="8" xs="12">
             <div className="align-content-center">
