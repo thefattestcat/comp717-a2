@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import Tictactoe from './games/Tictactoe/Tictactoe.jsx';
+//import Takeaway from './games/Takeaway/Takeaway.jsx';
 import Nav from './components/Nav.jsx';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import * as serviceWorker from './serviceWorker';

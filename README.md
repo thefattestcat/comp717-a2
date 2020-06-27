@@ -1,5 +1,4 @@
 ## COMP717 - Artificial Intelligence Assignment 2
-Will upload this assignment onto heroku and/or AWS for online viewing. 
 
 ## Pre-requisites
 

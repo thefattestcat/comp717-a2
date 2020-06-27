@@ -25,6 +25,7 @@ class Tictactoe extends Component {
       depth: 1,
       logConsole: false, //Toggle evaluation scores logging to console
       endTime: 0,
+      algo: 'DepthFirst'
     };
 
     this.maxPlayer = 1;
@@ -151,6 +152,18 @@ class Tictactoe extends Component {
     })
   }
 
+  toggleSearchAlgo = () => {
+    if(this.state.algo === 'DepthFirst') {
+      this.setState({
+        algo: 'Complete'
+      })
+    } else {
+      this.setState({
+        algo: 'DepthFirst'
+      })
+    }
+  }
+
   logToConsole = () => {
     if(this.state.logConsole) {
       this.setState({
@@ -227,26 +240,49 @@ class Tictactoe extends Component {
   makeMove = async () => {
     return new Promise ( async resolve => {
       console.log(`AI turn ${this.state.turnCount} [${this.state.positionState}]`)
-
-      if(this.state.maxPlayer === 2){
-        let startTime = Date.now();
-        let maxMove = await this.minimax(this.state.positionState, this.maxPlayer, this.state.depth, 0, this.state.depth)
-        let endTime = (Date.now() - startTime)
-        this.setState({
-          endTime: endTime
-        })
-        console.log(`Max:AI move to [${maxMove.move}] score:'${maxMove.score}' => [${this.state.positionState}] (${endTime}ms)`)
-        resolve(maxMove.move);
+      if(this.state.algo === 'DepthFirst') {
+        if(this.state.maxPlayer === 2){
+          let startTime = Date.now();
+          let maxMove = await this.minimax(this.state.positionState, this.maxPlayer, this.state.depth, 0, this.state.depth)
+          let endTime = (Date.now() - startTime)
+          this.setState({
+            endTime: endTime
+          })
+          console.log(`Max:AI move to [${maxMove.move}] score:'${maxMove.score}' => [${this.state.positionState}] (${endTime}ms)`)
+          resolve(maxMove.move);
+        }
+        else { 
+          let startTime = Date.now();
+          let minMove = await this.minimax(this.state.positionState, this.minPlayer, this.state.depth, 0, this.state.depth)
+          let endTime = (Date.now() - startTime)
+          this.setState({
+            endTime: endTime
+          })
+          console.log(`Min: AI move to [${minMove.move}] score:'${minMove.score}' => [${this.state.positionState}] (${endTime}ms)`)
+          resolve(minMove.move);
+        }
       }
-      else { 
-        let startTime = Date.now();
-        let minMove = await this.minimax(this.state.positionState, this.minPlayer, this.state.depth, 0, this.state.depth)
-        let endTime = (Date.now() - startTime)
-        this.setState({
-          endTime: endTime
-        })
-        console.log(`Min: AI move to [${minMove.move}] score:'${minMove.score}' => [${this.state.positionState}] (${endTime}ms)`)
-        resolve(minMove.move);
+      else {
+        if(this.state.maxPlayer === 2){
+          let startTime = Date.now();
+          let maxMove = await this.minimaxComplete(this.state.positionState, this.maxPlayer, 0)
+          let endTime = (Date.now() - startTime)
+          this.setState({
+            endTime: endTime
+          })
+          console.log(`Max:AI move to [${maxMove.move}] score:'${maxMove.score}' => [${this.state.positionState}] (${endTime}ms)`)
+          resolve(maxMove.move);
+        }
+        else { 
+          let startTime = Date.now();
+          let minMove = await this.minimaxComplete(this.state.positionState, this.minPlayer, 0)
+          let endTime = (Date.now() - startTime)
+          this.setState({
+            endTime: endTime
+          })
+          console.log(`Min: AI move to [${minMove.move}] score:'${minMove.score}' => [${this.state.positionState}] (${endTime}ms)`)
+          resolve(minMove.move);
+        }
       }
     })
   } 
@@ -396,7 +432,67 @@ class Tictactoe extends Component {
         
       } 
     }
-  } 
+  }
+  
+  minimaxComplete = (boardState, player, move) => {
+
+    if(this.checkTerminal(boardState)) {
+      let score = this.stateEval(boardState);
+      if(this.state.logConsole) console.log(`LeafNode=[${player === this.maxPlayer ? 'Max' : 'Min'}]: score=${score} move=[${move}] => [${boardState}]`)
+      return {score: score, move: move};
+    }
+          
+    let empty = this.checkEmptyPositions(boardState);  
+      
+    if(empty.length > 0) {
+        //Max
+        if(player === this.state.maxPlayer) {
+          let maxScore; let moves = [];
+          for(let i = 0; i < empty.length; i++) {
+            const move = empty[i];
+            let k = [...boardState];
+            k[move] = player;
+            let result = this.minimaxComplete(k, this.minPlayer, move)
+            maxScore = Math.max(result, this.bestMax)
+            moves.push({move: move, score: result.score});
+          }
+          
+          let bestMove;
+          let bestScore = -1000;
+          for(let i = 0; i < moves.length; i++) {
+            if(moves[i].score > bestScore) {
+              bestScore = moves[i].score;
+              bestMove = i;
+            }
+          }
+          return moves[bestMove];  
+        }
+        //Min
+        else {
+          let minScore; let moves = [];
+          for(let i = 0; i < empty.length; i++) {
+            const move = empty[i];
+            let k = [...boardState];
+            k[move] = player;            
+            let result = this.minimaxComplete(k, this.maxPlayer, move)
+            minScore = Math.min(minScore, this.bestMin)
+            moves.push({move: move, score: result.score});
+          }
+          
+          let bestMove;
+          let bestScore = 1000;
+          for(let i = 0; i < moves.length; i++) {
+            if(moves[i].score < bestScore) {
+              bestScore = moves[i].score;
+              bestMove = i;
+            }
+          }
+          return moves[bestMove];  
+        }
+        
+      } 
+    
+  }
 
   /**
    * 
@@ -617,7 +713,7 @@ class Tictactoe extends Component {
   }
    
   render() {
-    let slider = <RangeSlider value={this.state.depth} onChange={changeEvent => this.setState({depth: changeEvent.target.value})} min={1} max={7} tooltipStyle={{display: 'none'}}/>;
+    let slider = <RangeSlider value={this.state.depth} onChange={changeEvent => this.setState({depth: changeEvent.target.value})} min={1} max={8} tooltipStyle={{display: 'none'}}/>;
     return (
       <>
       <Container>
@@ -648,6 +744,7 @@ class Tictactoe extends Component {
             </div>
             <Button onClick={this.whoStart}>Start: {this.state.startingPlayer}</Button>
             <Button onClick={this.newGame}>New Game</Button>
+            <Button onClick={this.toggleSearchAlgo}>{this.state.algo}</Button>
             <FormCheck onClick={this.logToConsole} label={'Log to console?'} defaultChecked={this.state.logConsole}/>
           </Col>
           <Col md="8" xs="12">

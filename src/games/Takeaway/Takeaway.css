@@ -46,8 +46,8 @@
   }
   
   .grid-square {
-    width: 100px;
-    height: 100px;
+    width: 150px;
+    height: 300px;
     outline: 2px solid;
     float: left;
   }
