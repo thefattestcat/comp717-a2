@@ -1,4 +1,4 @@
-## COMP717 - Artificial Intelligence Assignment 2
+## Artificial Intelligence - Minimax implementation on tic-tac-toe
 To view online version go to https://young-peak-60006.herokuapp.com/
 
 
