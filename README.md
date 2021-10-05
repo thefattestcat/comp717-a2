@@ -1,6 +1,10 @@
 ## COMP717 - Artificial Intelligence Assignment 2
 To view online version go to https://young-peak-60006.herokuapp.com/
 
+
+https://user-images.githubusercontent.com/48980192/136101190-82524727-f2c6-4eb7-ae1d-a0ca13eed920.mp4
+
+
 ## Pre-requisites
 
 Requires the latest versions of both `Node.js` and `NPM` installed onto your machine.
